@@ -1,65 +1,147 @@
-body {
-  margin: 0;
-  background-color: #2c2c2c;
-  font-family: 'Press Start 2P', monospace;
-  overflow: hidden;
-  touch-action: none;
+// === GAME.JS ===
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = 320;
+canvas.height = 480;
+
+const startMenu = document.getElementById("startMenu");
+const GROUND_Y = 400;
+const GRAVITY = 0.6;
+
+let gameStarted = false;
+let flappyMode = false;
+let jumperMode = false;
+let isSpeedBoosted = false;
+let flappyTimer = 0;
+let jumperTimer = 0;
+let speedBoostTimer = 0;
+let invincibleTimer = 0;
+let score = 0;
+let objects = [];
+
+let jumpman = {
+  x: 60,
+  y: GROUND_Y,
+  vy: 0,
+  width: 32,
+  height: 32,
+  lives: 3,
+  grounded: true,
+  invincible: false,
+  spriteIndex: 0
+};
+
+const runSprite = new Image();
+runSprite.src = "jumpman_sprites.png";
+
+const airFrames = [new Image(), new Image()];
+airFrames[0].src = "jumpman_air_frame_1.png";
+airFrames[1].src = "jumpman_air_frame_2.png";
+let airFrameIndex = 0, airFrameCounter = 0;
+
+const heartImg = new Image();
+heartImg.src = "heart.png";
+
+const dribbleSound = new Audio("dribble.mp3");
+let dribbleTimer = 0;
+
+function drawJumpman() {
+  if (flappyMode) {
+    airFrameCounter++;
+    if (airFrameCounter % 8 === 0) airFrameIndex = (airFrameIndex + 1) % 2;
+    ctx.drawImage(airFrames[airFrameIndex], jumpman.x, jumpman.y, 32, 32);
+    if (isSpeedBoosted) drawSpeedTrail();
+  } else {
+    jumpman.spriteIndex = Math.floor(Date.now() / 100) % 3;
+    ctx.drawImage(runSprite, jumpman.spriteIndex * 32, 0, 32, 32, jumpman.x, jumpman.y, 32, 32);
+    if (isSpeedBoosted) drawSpeedTrail();
+    if (jumpman.grounded && Date.now() - dribbleTimer > 350) {
+      dribbleSound.play();
+      dribbleTimer = Date.now();
+    }
+  }
 }
 
-#startMenu {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: #2c2c2c;
-  animation: fadeIn 1s ease-in-out;
-  z-index: 10;
+function drawSpeedTrail() {
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.ellipse(jumpman.x - 10, jumpman.y + 16, 16, 8, 0, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.restore();
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(1.1); }
-  to { opacity: 1; transform: scale(1); }
+function drawLives() {
+  for (let i = 0; i < jumpman.lives; i++) {
+    ctx.drawImage(heartImg, 10 + i * 36, 10, 24, 24);
+  }
+} 
+// ...предыдущая часть
+
+function spawnObject() {
+  const types = ["coin", "boost", "shoes", "magnet", "logo", "debuff", "obstacle"];
+  const type = types[Math.floor(Math.random() * types.length)];
+  let y = GROUND_Y;
+
+  if (type === "coin") {
+    y = Math.random() < 0.5 ? GROUND_Y : 220 + Math.random() * 60;
+  } else if (type === "obstacle") {
+    y = Math.random() < 0.5 ? GROUND_Y : 150 + Math.random() * 100;
+  } else if (type === "logo") {
+    y = 120;
+  }
+
+  objects.push({
+    x: canvas.width + 20,
+    y: y,
+    type: type,
+    width: 24,
+    height: 24
+  });
 }
 
-.title-img {
-  width: 90%;
-  max-width: 400px;
-  image-rendering: pixelated;
-  margin-bottom: 20px;
+function updateObjects() {
+  objects.forEach(obj => {
+    obj.x -= isSpeedBoosted ? 6 : 3;
+
+    if (
+      jumpman.x < obj.x + obj.width &&
+      jumpman.x + jumpman.width > obj.x &&
+      jumpman.y < obj.y + obj.height &&
+      jumpman.y + jumpman.height > obj.y
+    ) {
+      handleCollision(obj.type);
+      obj.collected = true;
+    }
+  });
+
+  objects = objects.filter(obj => !obj.collected && obj.x > -50);
 }
 
-.menu-btn {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 12px;
-  padding: 10px 20px;
-  margin-top: 10px;
-  background-color: #ff3c3c;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.menu-btn:active {
-  transform: scale(0.95);
-}
-
-canvas {
-  background-color: #000;
-  display: none;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  image-rendering: pixelated;
-  width: 100vw;
-  height: 100vh;
-  max-width: 480px;
-  max-height: 720px;
+function handleCollision(type) {
+  if (type === "coin") {
+    score += 10;
+  } else if (type === "boost") {
+    isSpeedBoosted = true;
+    speedBoostTimer = 600;
+    jumpman.invincible = true;
+    invincibleTimer = 180;
+  } else if (type === "shoes") {
+    jumperMode = true;
+    jumperTimer = 600;
+  } else if (type === "magnet") {
+    // магнит логика по желанию
+  } else if (type === "logo") {
+    flappyMode = true;
+    flappyTimer = 900;
+    jumpman.invincible = true;
+    invincibleTimer = 180;
+  } else if (type === "debuff" || type === "obstacle") {
+    if (!jumpman.invincible) {
+      jumpman.lives--;
+      jumpman.invincible = true;
+      invincibleTimer = 180;
+    }
+  }
 }
