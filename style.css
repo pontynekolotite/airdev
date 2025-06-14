@@ -1,4 +1,4 @@
-/* Базовая настройка */
+/* === ОБЩИЕ НАСТРОЙКИ === */
 body {
   margin: 0;
   background-color: #2c2c2c;
@@ -7,7 +7,7 @@ body {
   touch-action: none;
 }
 
-/* Стартовое меню */
+/* === СТАРТОВОЕ МЕНЮ === */
 #startMenu {
   position: absolute;
   top: 0;
@@ -19,7 +19,15 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
   z-index: 10;
+}
+
+#startMenu.show {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .title-img {
@@ -29,6 +37,7 @@ body {
   margin-bottom: 20px;
 }
 
+/* === КНОПКИ === */
 .menu-btn {
   font-family: 'Press Start 2P', monospace;
   font-size: 12px;
@@ -39,9 +48,15 @@ body {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.1s ease;
 }
 
-/* Игровой холст */
+.menu-btn:active {
+  transform: scale(0.95);
+  background-color: #ff2222;
+}
+
+/* === CANVAS ИГРЫ === */
 canvas {
   background-color: #000;
   display: none;
