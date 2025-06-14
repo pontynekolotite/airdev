@@ -224,3 +224,37 @@ function getColorByType(type) {
     default: return "#fff";
   }
 }
+// === JUMPMAN RETRO: FINAL BLOCK ===
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    if (flappyMode) {
+      jumpman.vy = -6;
+    } else if (jumpman.grounded) {
+      jumpman.vy = -10;
+      jumpman.grounded = false;
+    }
+  }
+});
+
+document.getElementById("startBtn").addEventListener("click", () => {
+  document.getElementById("startMenu").classList.add("hidden");
+  document.getElementById("gameCanvas").style.display = "block";
+  resetGame();
+});
+
+function resetGame() {
+  jumpman.x = 60;
+  jumpman.y = GROUND_Y;
+  jumpman.vy = 0;
+  jumpman.lives = 3;
+  score = 0;
+  objects = [];
+  flappyMode = false;
+  jumperMode = false;
+  isSpeedBoosted = false;
+  invincibleTimer = 0;
+  gameStarted = true;
+}
+
+loop();
