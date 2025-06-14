@@ -1,8 +1,25 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const W = canvas.width;
-const H = canvas.height;
+let BASE_WIDTH = 600, BASE_HEIGHT = 900;
+let W = BASE_WIDTH, H = BASE_HEIGHT;
+
+function resizeCanvas() {
+  const ww = window.innerWidth;
+  const wh = window.innerHeight;
+  // 2:3 пропорция, вписываем максимально
+  let cw = ww, ch = Math.round(ww * 1.5);
+  if (ch > wh) {
+    ch = wh;
+    cw = Math.round(wh / 1.5);
+  }
+  canvas.style.width = cw + "px";
+  canvas.style.height = ch + "px";
+  W = BASE_WIDTH;
+  H = BASE_HEIGHT;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 const GROUND_Y = H - 140;
 const SKY_Y = Math.floor(H / 2.2);
@@ -24,8 +41,7 @@ let gameSpeed = 7;
 let lives = 3;
 let invincible = false;
 let invincibleTimer = 0;
-let stopTimer = 0; // пауза после урона
-
+let stopTimer = 0;
 let lastObjY = null;
 let lastObjType = null;
 let lastSpawnFrame = 0;
@@ -52,7 +68,6 @@ const jumpman = {
   dribble: 0
 };
 
-// Кроссовок в режиме Red Bull
 const sneaker = {
   x: 160,
   y: SKY_Y - 100,
@@ -65,8 +80,6 @@ const sneaker = {
 
 const coins = [];
 const obstacles = [];
-
-// --------------------------------------------
 
 function resetGame() {
   score = 0;
@@ -98,8 +111,6 @@ function resetGame() {
   document.getElementById("phrase").textContent = "";
 }
 
-// --------------------------------------------
-
 function drawLives() {
   for (let i = 0; i < lives; i++) {
     let x = 26 + i * 40, y = 29;
@@ -116,8 +127,6 @@ function drawLives() {
     ctx.restore();
   }
 }
-
-// --------------------------------------------
 
 function drawJumpman() {
   ctx.save();
@@ -181,13 +190,10 @@ function drawJumpman() {
   ctx.restore();
 }
 
-// --------------------------------------------
-
 function drawSneakerWithWings() {
-  // Кроссовок
   ctx.save();
   ctx.translate(jumpman.x, jumpman.y);
-  // Крылья (анимация)
+  // Анимация крыла
   let t = frame / 8;
   let angle = Math.sin(t) * 0.33;
   // Левое крыло
@@ -222,26 +228,25 @@ function drawSneakerWithWings() {
   ctx.restore();
   ctx.restore();
 }
-
-// --------------------------------------------
-
 function spawnCoinOrBuff() {
   // Гарантированный зазор по вертикали и горизонтали
   const r = Math.random();
+  let maxFlyY = 100; // выше не поднимется кроссовок в flappyMode
   let yList = [
     GROUND_Y + 10,
     GROUND_Y - 70,
     SKY_Y + 24,
     SKY_Y - 64,
     SKY_Y - 160
-  ];
-  // убираем плотные повторы по высоте
+  ].filter(yy => yy > maxFlyY && yy < H - 80); // не спавнить выше и ниже
+
+  // Не спавнить подряд однотипные объекты
   if (lastObjY !== null) {
     yList = yList.filter(yy => Math.abs(yy - lastObjY) > 70);
   }
   let y = yList[Math.floor(Math.random() * yList.length)];
   lastObjY = y;
-  // Баффы/дебаффы гарантированно не подряд (3+ объектов подряд не будет)
+
   let spawnType;
   if (r < 0.12 && lastObjType !== "buff") spawnType = "buff";
   else if (r < 0.19 && lastObjType !== "debuff") spawnType = "debuff";
@@ -267,8 +272,6 @@ function spawnCoinOrBuff() {
     coins.push({ x: W + 40, y, r: 13 });
   }
 }
-
-// --------------------------------------------
 
 function drawCoins() {
   for (let coin of coins) {
@@ -309,16 +312,13 @@ function drawCoins() {
   }
 }
 
-// --------------------------------------------
-
 function spawnObstacle() {
-  // Меньше препятствий, больше воздуха
-  if (Math.random() < 0.7) return; // только 30% шанс спавна!
+  if (Math.random() < 0.7) return;
   let yList = [
     GROUND_Y + 24,
     SKY_Y + 42,
     SKY_Y - 48
-  ];
+  ].filter(yy => yy > 100 && yy < H - 80);
   let y = yList[Math.floor(Math.random() * yList.length)];
   obstacles.push({ x: W + 60, y, w: 44, h: 44, type: "barrier" });
 }
@@ -334,15 +334,12 @@ function drawObstacles() {
     ctx.lineWidth = 3;
     ctx.strokeStyle = "#e74c3c";
     ctx.stroke();
-    // значок/иконка внутри
     ctx.font = "bold 22px monospace";
     ctx.fillStyle = "#fff";
     ctx.fillText("X", 12, 30);
     ctx.restore();
   }
 }
-
-// --------------------------------------------
 
 function showPhrase(forced) {
   let text = forced || phrases[Math.floor(Math.random() * phrases.length)];
@@ -352,22 +349,16 @@ function showPhrase(forced) {
   lastPhrase = text;
 }
 
-// --------------------------------------------
-
 function gameLoop() {
   frame++;
   ctx.clearRect(0, 0, W, H);
-
-  // Фон
   ctx.fillStyle = "#bdbdbd";
   ctx.fillRect(0, 0, W, H);
-  // Граунд
   ctx.fillStyle = "#999";
   ctx.fillRect(0, GROUND_Y + 36, W, H - GROUND_Y - 36);
 
   drawLives();
 
-  // Облака
   ctx.save();
   ctx.globalAlpha = 0.18;
   ctx.fillStyle = "#fff";
@@ -378,7 +369,6 @@ function gameLoop() {
   ctx.fill();
   ctx.restore();
 
-  // Ландшафт — не более 1-2 объектов рядом, много воздуха
   if (frame - lastSpawnFrame > 40 + Math.random() * 20) {
     spawnCoinOrBuff();
     spawnObstacle();
@@ -388,21 +378,19 @@ function gameLoop() {
   drawCoins();
   drawObstacles();
 
-  // ----- Спецрежимы и джордан/кроссовок -----
   if (flappyMode) {
     drawSneakerWithWings();
   } else {
     drawJumpman();
   }
 
-  // Движение предметов
   for (let i = coins.length - 1; i >= 0; i--) {
     coins[i].x -= gameSpeed;
-    // Сбор
-    if (
-      Math.abs((flappyMode ? sneaker.x : jumpman.x) + 32 - coins[i].x) < (flappyMode ? 42 : 32) &&
-      Math.abs((flappyMode ? sneaker.y : jumpman.y) + 24 - coins[i].y) < (flappyMode ? 36 : 26)
-    ) {
+    let px = flappyMode ? jumpman.x + 39 : jumpman.x + 32;
+    let py = flappyMode ? jumpman.y + 17 : jumpman.y + 24;
+    let dist = Math.hypot(px - coins[i].x, py - coins[i].y);
+    let rad = flappyMode ? 39 : 24;
+    if (dist < rad + coins[i].r) {
       if (coins[i].buff === "redbull") {
         flappyMode = true;
         flappyTimer = 23 * 60;
@@ -429,12 +417,11 @@ function gameLoop() {
 
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].x -= gameSpeed;
-    // Коллизия
-    if (
-      !invincible &&
-      Math.abs((flappyMode ? sneaker.x : jumpman.x) + 32 - obstacles[i].x) < 48 &&
-      Math.abs((flappyMode ? sneaker.y : jumpman.y) + 24 - obstacles[i].y) < 44
-    ) {
+    let px = flappyMode ? jumpman.x + 39 : jumpman.x + 32;
+    let py = flappyMode ? jumpman.y + 17 : jumpman.y + 24;
+    let dist = Math.hypot(px - obstacles[i].x, py - obstacles[i].y);
+    let rad = flappyMode ? 39 : 24;
+    if (!invincible && dist < rad + 22) {
       lives--;
       if (lives > 0) {
         invincible = true;
@@ -453,20 +440,18 @@ function gameLoop() {
     if (obstacles[i].x < -60) obstacles.splice(i, 1);
   }
 
-  // Механики движения — с паузой после урона
   if (stopTimer > 0) {
     stopTimer--;
     if (gameRunning) requestAnimationFrame(gameLoop);
     return;
   }
 
-  // Физика: режим кроссовка (flappyMode)
   if (flappyMode) {
     flappyTimer--;
     jumpman.x = 160;
     jumpman.y += jumpman.vy;
     jumpman.vy += GRAVITY * 0.65;
-    if (jumpman.y < 30) jumpman.y = 30;
+    if (jumpman.y < 100) jumpman.y = 100;
     if (jumpman.y > H - 80) jumpman.y = H - 80;
     if (flappyTimer <= 0) {
       flappyMode = false;
@@ -474,7 +459,7 @@ function gameLoop() {
       jumpman.vy = 0;
       showPhrase("This is for Chicago!");
     }
-    } else if (jumperMode) {
+  } else if (jumperMode) {
     jumperTimer--;
     jumpman.y += jumpman.vy;
     jumpman.vy += GRAVITY * 0.81;
@@ -490,18 +475,14 @@ function gameLoop() {
       showPhrase("Too easy!");
     }
   } else {
-    // Обычная физика для раннера
     jumpman.y += jumpman.vy;
     jumpman.vy += GRAVITY;
-
-    // На земле
     if (jumpman.y >= GROUND_Y) {
       jumpman.y = GROUND_Y;
       jumpman.vy = 0;
       jumpman.isGround = true;
       jumpman.canDoubleJump = true;
     }
-    // На облаках
     if (jumpman.y < SKY_Y && jumpman.isGround) {
       jumpman.isGround = false;
     }
@@ -511,7 +492,6 @@ function gameLoop() {
     }
   }
 
-  // Дебафф: замедление
   if (debuff) {
     debuffTimer--;
     if (debuff === "slow") gameSpeed = 3.5;
@@ -523,18 +503,15 @@ function gameLoop() {
     gameSpeed = 7;
   }
 
-  // Неуязвимость
   if (invincible) {
     invincibleTimer--;
     if (invincibleTimer <= 0) invincible = false;
   }
 
-  // Счёт
   document.getElementById("score").textContent = "SCORE: " + score;
   document.getElementById("score").style.display = "block";
   document.getElementById("logo").style.display = "none";
 
-  // Фразы
   if (phraseTimer > 0) {
     phraseTimer--;
     if (phraseTimer === 0) {
@@ -545,7 +522,6 @@ function gameLoop() {
   if (gameRunning) requestAnimationFrame(gameLoop);
 }
 
-// Управление
 document.getElementById("startBtn").onclick = function () {
   this.style.display = "none";
   resetGame();
