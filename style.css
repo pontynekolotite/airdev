@@ -145,3 +145,82 @@ function handleCollision(type) {
     }
   }
 }
+function update() {
+  if (flappyMode) {
+    flappyTimer--;
+    jumpman.y += jumpman.vy;
+    jumpman.vy += GRAVITY * 0.7;
+    if (jumpman.y < 20) jumpman.y = 20;
+    if (jumpman.y > canvas.height - 48) jumpman.y = canvas.height - 48;
+    if (flappyTimer <= 0) flappyMode = false;
+  } else if (jumperMode) {
+    jumperTimer--;
+    jumpman.y += jumpman.vy;
+    jumpman.vy += GRAVITY * 0.81;
+    if (jumpman.y > GROUND_Y) {
+      jumpman.y = GROUND_Y;
+      jumpman.vy = 0;
+      jumpman.grounded = true;
+      jumperMode = false;
+    }
+  } else {
+    jumpman.y += jumpman.vy;
+    jumpman.vy += GRAVITY;
+    if (jumpman.y > GROUND_Y) {
+      jumpman.y = GROUND_Y;
+      jumpman.vy = 0;
+      jumpman.grounded = true;
+    }
+  }
+
+  if (speedBoostTimer > 0) speedBoostTimer--;
+  else isSpeedBoosted = false;
+
+  if (invincibleTimer > 0) invincibleTimer--;
+  else jumpman.invincible = false;
+
+  updateObjects();
+
+  if (jumpman.lives <= 0 && gameStarted) {
+    gameStarted = false;
+    setTimeout(() => {
+      canvas.style.display = "none";
+      startMenu.classList.remove("hidden");
+    }, 1500);
+  }
+
+  if (Math.random() < 0.04) spawnObject();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#222";
+  ctx.fillRect(0, GROUND_Y + 32, canvas.width, canvas.height - GROUND_Y);
+
+  drawJumpman();
+  drawLives();
+
+  objects.forEach(obj => {
+    ctx.fillStyle = getColorByType(obj.type);
+    ctx.beginPath();
+    ctx.arc(obj.x + 12, obj.y + 12, 12, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "12px 'Press Start 2P'";
+  ctx.fillText("SCORE: " + score, 10, 60);
+}
+
+function getColorByType(type) {
+  switch (type) {
+    case "coin": return "gold";
+    case "boost": return "#3cf";
+    case "shoes": return "#f00";
+    case "logo": return "#ffcc00";
+    case "magnet": return "#9cf";
+    case "debuff": return "#444";
+    case "obstacle": return "#999";
+    default: return "#fff";
+  }
+}
