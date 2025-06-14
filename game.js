@@ -1,28 +1,25 @@
-// game.js — основной код JUMPMAN RETRO
-
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 canvas.width = 320;
 canvas.height = 480;
 
+const startMenu = document.getElementById("startMenu");
 const GROUND_Y = 400;
 const GRAVITY = 0.6;
 
+// === СОСТОЯНИЯ ===
 let gameStarted = false;
 let flappyMode = false;
 let jumperMode = false;
 let isSpeedBoosted = false;
-
 let flappyTimer = 0;
 let jumperTimer = 0;
 let speedBoostTimer = 0;
 let invincibleTimer = 0;
-
 let score = 0;
 let objects = [];
-let airFrameIndex = 0;
-let airFrameCounter = 0;
 
+// === JUMPMAN ===
 let jumpman = {
   x: 60,
   y: GROUND_Y,
@@ -31,20 +28,23 @@ let jumpman = {
   height: 32,
   lives: 3,
   grounded: true,
-  spriteIndex: 0,
-  invincible: false
+  invincible: false,
+  spriteIndex: 0
 };
 
+// === СПРАЙТЫ ===
 const runSprite = new Image();
-runSprite.src = "jumpman_sprites.png";
+runSprite.src = "jumpman_sprites.png"; // бег
 
 const airFrames = [new Image(), new Image()];
 airFrames[0].src = "jumpman_air_frame_1.png";
 airFrames[1].src = "jumpman_air_frame_2.png";
+let airFrameIndex = 0, airFrameCounter = 0;
 
 const heartImg = new Image();
-heartImg.src = "heart.png";
+heartImg.src = "heart.png"; // кроссовок
 
+// === ЗВУК ===
 const dribbleSound = new Audio("dribble.mp3");
 let dribbleTimer = 0;
 
@@ -52,7 +52,7 @@ function drawJumpman() {
   if (flappyMode) {
     airFrameCounter++;
     if (airFrameCounter % 8 === 0) airFrameIndex = (airFrameIndex + 1) % 2;
-    ctx.drawImage(airFrames[airFrameIndex], jumpman.x, jumpman.y, jumpman.width, jumpman.height);
+    ctx.drawImage(airFrames[airFrameIndex], jumpman.x, jumpman.y, 32, 32);
     if (isSpeedBoosted) drawSpeedTrail();
   } else {
     jumpman.spriteIndex = Math.floor(Date.now() / 100) % 3;
@@ -62,94 +62,6 @@ function drawJumpman() {
       dribbleSound.play();
       dribbleTimer = Date.now();
     }
-  }
-}
-
-function drawLives() {
-  for (let i = 0; i < jumpman.lives; i++) {
-    ctx.drawImage(heartImg, 10 + i * 36, 10, 24, 24);
-  }
-}
-
-function drawSpeedTrail() {
-  ctx.save();
-  ctx.globalAlpha = 0.3;
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.ellipse(jumpman.x - 10, jumpman.y + 16, 16, 8, 0, 0, 2 * Math.PI);
-  ctx.fill();
-  ctx.restore();
-}
-// game.js — основной код JUMPMAN RETRO
-
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-canvas.width = 320;
-canvas.height = 480;
-
-const GROUND_Y = 400;
-const GRAVITY = 0.6;
-
-let gameStarted = false;
-let flappyMode = false;
-let jumperMode = false;
-let isSpeedBoosted = false;
-
-let flappyTimer = 0;
-let jumperTimer = 0;
-let speedBoostTimer = 0;
-let invincibleTimer = 0;
-
-let score = 0;
-let objects = [];
-let airFrameIndex = 0;
-let airFrameCounter = 0;
-
-let jumpman = {
-  x: 60,
-  y: GROUND_Y,
-  vy: 0,
-  width: 32,
-  height: 32,
-  lives: 3,
-  grounded: true,
-  spriteIndex: 0,
-  invincible: false
-};
-
-const runSprite = new Image();
-runSprite.src = "jumpman_sprites.png";
-
-const airFrames = [new Image(), new Image()];
-airFrames[0].src = "jumpman_air_frame_1.png";
-airFrames[1].src = "jumpman_air_frame_2.png";
-
-const heartImg = new Image();
-heartImg.src = "heart.png";
-
-const dribbleSound = new Audio("dribble.mp3");
-let dribbleTimer = 0;
-
-function drawJumpman() {
-  if (flappyMode) {
-    airFrameCounter++;
-    if (airFrameCounter % 8 === 0) airFrameIndex = (airFrameIndex + 1) % 2;
-    ctx.drawImage(airFrames[airFrameIndex], jumpman.x, jumpman.y, jumpman.width, jumpman.height);
-    if (isSpeedBoosted) drawSpeedTrail();
-  } else {
-    jumpman.spriteIndex = Math.floor(Date.now() / 100) % 3;
-    ctx.drawImage(runSprite, jumpman.spriteIndex * 32, 0, 32, 32, jumpman.x, jumpman.y, 32, 32);
-    if (isSpeedBoosted) drawSpeedTrail();
-    if (jumpman.grounded && Date.now() - dribbleTimer > 350) {
-      dribbleSound.play();
-      dribbleTimer = Date.now();
-    }
-  }
-}
-
-function drawLives() {
-  for (let i = 0; i < jumpman.lives; i++) {
-    ctx.drawImage(heartImg, 10 + i * 36, 10, 24, 24);
   }
 }
 
@@ -163,6 +75,11 @@ function drawSpeedTrail() {
   ctx.restore();
 }
 
+function drawLives() {
+  for (let i = 0; i < jumpman.lives; i++) {
+    ctx.drawImage(heartImg, 10 + i * 36, 10, 24, 24);
+  }
+}
 function spawnObject() {
   const types = ["coin", "boost", "shoes", "magnet", "logo", "debuff", "obstacle"];
   const type = types[Math.floor(Math.random() * types.length)];
@@ -170,12 +87,10 @@ function spawnObject() {
 
   if (type === "coin") {
     y = Math.random() < 0.5 ? GROUND_Y : 220 + Math.random() * 60;
-  } else if (type === "debuff") {
-    y = GROUND_Y;
   } else if (type === "obstacle") {
     y = Math.random() < 0.5 ? GROUND_Y : 150 + Math.random() * 100;
   } else if (type === "logo") {
-    y = 150;
+    y = 120;
   }
 
   objects.push({
@@ -217,19 +132,13 @@ function handleCollision(type) {
     jumperMode = true;
     jumperTimer = 600;
   } else if (type === "magnet") {
-    // магнитная логика — можно добавить
+    // магнит логика по желанию
   } else if (type === "logo") {
     flappyMode = true;
     flappyTimer = 900;
     jumpman.invincible = true;
     invincibleTimer = 180;
-  } else if (type === "debuff") {
-    if (!jumpman.invincible) {
-      jumpman.lives--;
-      jumpman.invincible = true;
-      invincibleTimer = 180;
-    }
-  } else if (type === "obstacle") {
+  } else if (type === "debuff" || type === "obstacle") {
     if (!jumpman.invincible) {
       jumpman.lives--;
       jumpman.invincible = true;
@@ -237,8 +146,6 @@ function handleCollision(type) {
     }
   }
 }
-// ... (предыдущий код)
-
 function update() {
   if (flappyMode) {
     flappyTimer--;
@@ -277,8 +184,10 @@ function update() {
 
   if (jumpman.lives <= 0) {
     gameStarted = false;
-    document.getElementById("startMenu").classList.remove("hidden");
-    canvas.style.display = "none";
+    setTimeout(() => {
+      canvas.style.display = "none";
+      startMenu.classList.remove("hidden");
+    }, 1200);
   }
 
   if (Math.random() < 0.04) spawnObject();
@@ -287,7 +196,7 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "#111";
+  ctx.fillStyle = "#222";
   ctx.fillRect(0, GROUND_Y + 32, canvas.width, canvas.height - GROUND_Y);
 
   drawJumpman();
@@ -337,8 +246,17 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+document.addEventListener("touchstart", () => {
+  if (flappyMode) {
+    jumpman.vy = -6;
+  } else if (jumpman.grounded) {
+    jumpman.vy = -10;
+    jumpman.grounded = false;
+  }
+});
+
 document.getElementById("startBtn").addEventListener("click", () => {
-  document.getElementById("startMenu").classList.add("hidden");
+  startMenu.classList.add("hidden");
   canvas.style.display = "block";
   resetGame();
 });
