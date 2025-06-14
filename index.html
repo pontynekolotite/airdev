@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>JUMPMAN RETRO</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <!-- СТАРТОВОЕ МЕНЮ -->
   <div id="startMenu">
-    <img src="assets/jumpman_retro_title_screen.png" alt="Jumpman Retro" class="title-img" />
+    <img src="jumpman_retro_title_screen.png" alt="Jumpman Retro" class="title-img">
     <button id="startBtn" class="menu-btn">START</button>
   </div>
 
-  <!-- ИГРОВОЕ ПОЛЕ -->
   <canvas id="gameCanvas" width="320" height="480"></canvas>
-
-  <!-- ЛОГИКА ИГРЫ -->
   <script src="game.js"></script>
 </body>
 </html>
